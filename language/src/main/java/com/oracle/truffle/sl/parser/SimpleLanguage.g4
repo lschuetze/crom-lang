@@ -117,13 +117,111 @@ public static Map<String, RootCallTarget> parseSL(SLLanguage language, Source so
 
 simplelanguage
 :
-function function* EOF
+ LINEBREAK* globaldef LINEBREAK* (globaldef LINEBREAK*)* EOF
+;
+
+
+globaldef
+:
+(
+function
+|
+cls
+|
+compartment
+)
+;
+
+cls
+:
+'class'
+IDENTIFIER
+constructor_decl
+start_body
+(
+    function
+    |
+    variable_definition
+)*
+end_body
+;
+
+
+compartment
+:
+'compartment'
+IDENTIFIER
+constructor_decl
+start_body
+(
+    (
+        function
+        |
+        variable_definition
+        |
+        role
+    )
+    LINEBREAK*
+)*
+end_body
+;
+
+
+role
+:
+'role'
+IDENTIFIER
+constructor_decl
+'playedBy'
+IDENTIFIER
+start_body
+(
+    (
+        function
+        |
+        variable_definition
+    )
+    LINEBREAK*
+)*
+end_body
+;
+
+
+constructor_decl
+:
+'('
+(
+    identifier_decl
+    (
+        ','
+        LINEBREAK?
+        identifier_decl
+    )*
+)?
+')'
+;
+
+
+variable_definition
+:
+'var'
+identifier_decl
+'='
+expression
+;
+
+
+identifier_decl
+:
+IDENTIFIER
+':'
+IDENTIFIER
 ;
 
 
 function
 :
-'function'
+'def'
 IDENTIFIER
 s='('
                                                 { factory.startFunction($IDENTIFIER, $s); }
@@ -143,12 +241,12 @@ body=block[false]                               { factory.finishFunction($body.r
 block [boolean inLoop] returns [SLStatementNode result]
 :                                               { factory.startBlock();
                                                   List<SLStatementNode> body = new ArrayList<>(); }
-s='{'
+s=start_body
 (
     statement[inLoop]                           { body.add($statement.result); }
 )*
-e='}'
-                                                { $result = factory.finishBlock(body, $s.getStartIndex(), $e.getStopIndex() - $s.getStartIndex() + 1); }
+e=end_body
+                                                { $result = factory.finishBlock(body, $s.result.getStartIndex(), $e.result.getStopIndex() - $s.result.getStartIndex() + 1); }
 ;
 
 
@@ -158,20 +256,64 @@ statement [boolean inLoop] returns [SLStatementNode result]
     while_statement                             { $result = $while_statement.result; }
 |
     b='break'                                   { if (inLoop) { $result = factory.createBreak($b); } else { SemErr($b, "break used outside of loop"); } }
-    ';'
+    (';' | LINEBREAK)
 |
     c='continue'                                { if (inLoop) { $result = factory.createContinue($c); } else { SemErr($c, "continue used outside of loop"); } }
-    ';'
+    (';' | LINEBREAK)
 |
     if_statement[inLoop]                        { $result = $if_statement.result; }
 |
     return_statement                            { $result = $return_statement.result; }
 |
-    expression ';'                              { $result = $expression.result; }
+    expression                                  { $result = $expression.result; }
+    (';' | LINEBREAK)
 |
     d='debugger'                                { $result = factory.createDebugger($d); }
-    ';'
+    (';' | LINEBREAK)
+|
+    variable_definition
+    (';' | LINEBREAK)
+|
+    assignment_statement
+    (';' | LINEBREAK)
+|
+    roleplay_statement
+    (';' | LINEBREAK)
 )
+LINEBREAK*
+;
+
+assignment_statement
+:
+assignment_target
+(
+    '='
+    assignment_target
+)*
+'='
+expression
+;
+
+assignment_target
+:
+(
+    '+'?
+    'this'
+|
+    'thisC'
+|
+    IDENTIFIER
+)
+(
+    member_expression[null, null, null]
+)?
+;
+
+roleplay_statement
+:
+assignment_target
+'play'
+variable_expression
 ;
 
 
@@ -205,7 +347,7 @@ r='return'                                      { SLExpressionNode value = null;
 (
     expression                                  { value = $expression.result; }
 )?                                              { $result = factory.createReturn($r, value); }
-';'
+(';' | LINEBREAK)
 ;
 
 
@@ -262,12 +404,7 @@ factor                                          { $result = $factor.result; }
 factor returns [SLExpressionNode result]
 :
 (
-    IDENTIFIER                                  { SLExpressionNode assignmentName = factory.createStringLiteral($IDENTIFIER, false); }
-    (
-        member_expression[null, null, assignmentName] { $result = $member_expression.result; }
-    |
-                                                { $result = factory.createRead(assignmentName); }
-    )
+    variable_expression
 |
     STRING_LITERAL                              { $result = factory.createStringLiteral($STRING_LITERAL, true); }
 |
@@ -276,6 +413,37 @@ factor returns [SLExpressionNode result]
     s='('
     expr=expression
     e=')'                                       { $result = factory.createParenExpression($expr.result, $s.getStartIndex(), $e.getStopIndex() - $s.getStartIndex() + 1); }
+)
+;
+
+variable_expression returns [SLExpressionNode result]
+:
+(
+    assignment_target
+|
+    instantiation
+    (
+        member_expression[null, null, assignmentName] { $result = $member_expression.result; }
+    |
+                                                { $result = factory.createRead(assignmentName); }
+    )
+)
+;
+
+instantiation
+:
+(
+    'new'
+    IDENTIFIER
+    '('
+    (
+        expression
+        (
+            ','
+            expression
+        )*
+    )?
+    ')'
 )
 ;
 
@@ -298,15 +466,6 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
     e=')'
                                                 { $result = factory.createCall(receiver, parameters, $e); }
 |
-    '='
-    expression                                  { if (assignmentName == null) {
-                                                      SemErr($expression.start, "invalid assignment target");
-                                                  } else if (assignmentReceiver == null) {
-                                                      $result = factory.createAssignment(assignmentName, $expression.result);
-                                                  } else {
-                                                      $result = factory.createWriteProperty(assignmentReceiver, assignmentName, $expression.result);
-                                                  } }
-|
     '.'                                         { if (receiver == null) {
                                                        receiver = factory.createRead(assignmentName);
                                                   } }
@@ -327,9 +486,16 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
 )?
 ;
 
+start_body returns [Token result]
+: LINEBREAK? '{' LINEBREAK*;
+end_body returns [Token result]
+: LINEBREAK? '}' LINEBREAK*;
+
 // lexer
 
-WS : [ \t\r\n\u000C]+ -> skip;
+LINEBREAK : [\r\n];
+
+WS : [ \t\u000C]+ -> skip;
 COMMENT : '/*' .*? '*/' -> skip;
 LINE_COMMENT : '//' ~[\r\n]* -> skip;
 
