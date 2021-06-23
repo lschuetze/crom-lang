@@ -20,7 +20,7 @@ compartment Behavior() {
     */
     role ServiceRole() playedBy Robot {
         var name : String = "ServiceRole";
-        def move() {
+        def move() : void {
             // a +this activates role dispatch on the conceptual whole
             /*
             How could one verify (at compile time, semantic analysis) that +this.name()
