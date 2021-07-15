@@ -57,6 +57,11 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.sl.SLLanguage;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ListIterator;
+
 /**
  * Represents an SL object.
  *
@@ -82,8 +87,11 @@ import com.oracle.truffle.sl.SLLanguage;
 public final class SLObject extends DynamicObject implements TruffleObject {
     protected static final int CACHE_LIMIT = 3;
 
+    protected List<SLObject> roles;
+
     public SLObject(Shape shape) {
         super(shape);
+        roles = new ArrayList<>();
     }
 
     @ExportMessage
@@ -206,6 +214,16 @@ public final class SLObject extends DynamicObject implements TruffleObject {
     @ExportMessage
     Object readMember(String name,
                     @CachedLibrary("this") DynamicObjectLibrary objectLibrary) throws UnknownIdentifierException {
+        if (!roles.isEmpty()) {
+            ListIterator<SLObject> roleIterator = roles.listIterator(roles.size());
+            while (roleIterator.hasPrevious()) {
+                SLObject role = roleIterator.previous();
+                Object result = objectLibrary.getOrDefault(role, name, null);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
         Object result = objectLibrary.getOrDefault(this, name, null);
         if (result == null) {
             /* Property does not exist. */
@@ -221,5 +239,16 @@ public final class SLObject extends DynamicObject implements TruffleObject {
     void writeMember(String name, Object value,
                     @CachedLibrary("this") DynamicObjectLibrary objectLibrary) {
         objectLibrary.put(this, name, value);
+    }
+
+    public void playRole(SLObject role) {
+        roles.add(role);
+        // Insert dummy values for all new keys (should fix assertion problems with default InteropLibrary code)
+        DynamicObjectLibrary objectLibrary = DynamicObjectLibrary.getUncached();
+        for (Object key : objectLibrary.getKeyArray(role)) {
+            if (!objectLibrary.containsKey(this, key)) {
+                objectLibrary.put(this, key, SLNull.SINGLETON);
+            }
+        }
     }
 }
