@@ -63,6 +63,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.sl.builtins.SLBuiltinNode;
@@ -104,13 +105,7 @@ import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNode;
 import com.oracle.truffle.sl.parser.SLNodeFactory;
 import com.oracle.truffle.sl.parser.SimpleLanguageLexer;
 import com.oracle.truffle.sl.parser.SimpleLanguageParser;
-import com.oracle.truffle.sl.runtime.SLBigNumber;
-import com.oracle.truffle.sl.runtime.SLContext;
-import com.oracle.truffle.sl.runtime.SLFunction;
-import com.oracle.truffle.sl.runtime.SLFunctionRegistry;
-import com.oracle.truffle.sl.runtime.SLLanguageView;
-import com.oracle.truffle.sl.runtime.SLNull;
-import com.oracle.truffle.sl.runtime.SLObject;
+import com.oracle.truffle.sl.runtime.*;
 
 /**
  * SL is a simple language to demonstrate and showcase features of Truffle. The implementation is as
@@ -209,10 +204,12 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
     private final Map<String, RootCallTarget> undefinedFunctions = new ConcurrentHashMap<>();
 
     private final Shape rootShape;
+    private final Shape playerRootShape;
 
     public SLLanguage() {
         counter++;
         this.rootShape = Shape.newBuilder().layout(SLObject.class).build();
+        this.playerRootShape = Shape.newBuilder().layout(SLPlayer.class).build();
     }
 
     @Override
@@ -400,6 +397,13 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
         SLObject object = new SLObject(rootShape);
         reporter.onReturnValue(object, 0, AllocationReporter.SIZE_UNKNOWN);
         return object;
+    }
+
+    public SLPlayer createPlayer(AllocationReporter reporter, SLObject object) {
+        reporter.onEnter(null, 0, AllocationReporter.SIZE_UNKNOWN);
+        SLPlayer player = new SLPlayer(playerRootShape, object);
+        reporter.onReturnValue(player, 0, AllocationReporter.SIZE_UNKNOWN);
+        return player;
     }
 
     public static SLContext getCurrentContext() {
