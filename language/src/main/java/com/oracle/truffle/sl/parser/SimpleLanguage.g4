@@ -165,8 +165,6 @@ statement [boolean inLoop] returns [SLStatementNode result]
 |
     if_statement[inLoop]                        { $result = $if_statement.result; }
 |
-    roleplay_statement                          { $result = $roleplay_statement.result; }
-|
     return_statement                            { $result = $return_statement.result; }
 |
     expression ';'                              { $result = $expression.result; }
@@ -174,15 +172,6 @@ statement [boolean inLoop] returns [SLStatementNode result]
     d='debugger'                                { $result = factory.createDebugger($d); }
     ';'
 )
-;
-
-
-roleplay_statement returns [SLStatementNode result]
-:
-p=expression
-o='play'
-r=expression
-';'                                             { $result = factory.createPlay($o, $p.result, $r.result); }
 ;
 
 

@@ -8,7 +8,7 @@ function test1() {
 
   println(newPlayer(obj1).x);
   // This should invalidate the SLAsPlayerBuiltin.newPlayer cache for the following newPlayer(obj1)
-  obj1 play obj2;
+  play(obj1, obj2);
   println(newPlayer(obj1).x);
 }
 

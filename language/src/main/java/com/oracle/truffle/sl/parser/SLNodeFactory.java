@@ -248,12 +248,6 @@ public class SLNodeFactory {
         return debuggerNode;
     }
 
-    public SLStatementNode createPlay(Token startToken, SLExpressionNode playerNode, SLExpressionNode roleNode) {
-        final SLPlayNode playNode = SLPlayNodeGen.create(playerNode, roleNode);
-        srcFromToken(playNode, startToken);
-        return playNode;
-    }
-
     /**
      * Returns an {@link SLBreakNode} for the given token.
      *

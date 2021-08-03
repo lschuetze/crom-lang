@@ -55,9 +55,7 @@ import com.oracle.truffle.sl.runtime.SLObject;
 @NodeChild("roleNode")
 public abstract class SLPlayNode extends SLExpressionNode {
 
-    static final int LIBRARY_LIMIT = 3;
-
-    @Specialization(limit = "LIBRARY_LIMIT")
+    @Specialization
     protected SLObject playRole(SLObject player, SLObject role) {
         player.playRole(role);
         return player;

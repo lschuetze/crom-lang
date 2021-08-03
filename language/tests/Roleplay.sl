@@ -16,7 +16,7 @@ function main() {
   println(obj2.y);
   println("");
 
-  obj1 play obj2;
+  play(obj1, obj2);
 
   println(obj1.x);
   println(newPlayer(obj1).x);
