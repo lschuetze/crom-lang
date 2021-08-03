@@ -204,12 +204,10 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
     private final Map<String, RootCallTarget> undefinedFunctions = new ConcurrentHashMap<>();
 
     private final Shape rootShape;
-    private final Shape playerRootShape;
 
     public SLLanguage() {
         counter++;
         this.rootShape = Shape.newBuilder().layout(SLObject.class).build();
-        this.playerRootShape = Shape.newBuilder().layout(SLPlayer.class).build();
     }
 
     @Override
@@ -401,7 +399,7 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
 
     public SLPlayer createPlayer(AllocationReporter reporter, SLObject object) {
         reporter.onEnter(null, 0, AllocationReporter.SIZE_UNKNOWN);
-        SLPlayer player = new SLPlayer(playerRootShape, object);
+        SLPlayer player = new SLPlayer(object);
         reporter.onReturnValue(player, 0, AllocationReporter.SIZE_UNKNOWN);
         return player;
     }
