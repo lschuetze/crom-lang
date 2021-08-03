@@ -88,7 +88,7 @@ import java.util.ListIterator;
 public final class SLObject extends DynamicObject implements TruffleObject {
     protected static final int CACHE_LIMIT = 3;
 
-    protected List<SLObject> roles;
+    public List<SLObject> roles;
     public CyclicAssumption rolesUnchanged;
 
     public SLObject(Shape shape) {
