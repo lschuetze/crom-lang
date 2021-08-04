@@ -20,7 +20,7 @@ import com.oracle.truffle.sl.runtime.*;
 @NodeInfo(shortName = "newPlayer")
 public abstract class SLAsPlayerBuiltin extends SLBuiltinNode {
 
-    @Specialization(guards = { "obj != null", "obj.roles.size() == 0" })
+    @Specialization(guards = { "obj != null", "obj.roles.length == 0" })
     public Object noRoles(SLObject obj) {
         return obj;
     }

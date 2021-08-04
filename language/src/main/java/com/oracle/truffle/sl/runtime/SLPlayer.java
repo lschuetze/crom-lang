@@ -153,8 +153,8 @@ public final class SLPlayer implements TruffleObject {
     }
 
     Object lookupTarget(String name, InteropLibrary roleLibrary) {
-        for (int i = wrapped.roles.size() - 1; i >= 0; i--) {
-            Object role = wrapped.roles.get(i);
+        for (int i = wrapped.roles.length - 1; i >= 0; i--) {
+            Object role = wrapped.roles[i];
             if (roleLibrary.isMemberExisting(role, name)) {
                 return role;
             }

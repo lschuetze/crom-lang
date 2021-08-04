@@ -88,12 +88,12 @@ import java.util.ListIterator;
 public final class SLObject extends DynamicObject implements TruffleObject {
     protected static final int CACHE_LIMIT = 3;
 
-    public List<SLObject> roles;
+    public SLObject[] roles;
     public CyclicAssumption rolesUnchanged;
 
     public SLObject(Shape shape) {
         super(shape);
-        roles = new ArrayList<>();
+        roles = new SLObject[0];
         rolesUnchanged = new CyclicAssumption("roles");
     }
 
@@ -235,7 +235,8 @@ public final class SLObject extends DynamicObject implements TruffleObject {
     }
 
     public void playRole(SLObject role) {
-        roles.add(role);
+        roles = Arrays.copyOf(roles, roles.length + 1);
+        roles[roles.length - 1] = role;
         rolesUnchanged.invalidate();
     }
 }

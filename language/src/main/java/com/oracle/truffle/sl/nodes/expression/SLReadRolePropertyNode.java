@@ -42,6 +42,7 @@ package com.oracle.truffle.sl.nodes.expression;
 
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -49,6 +50,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.util.SLToMemberNode;
@@ -71,11 +73,12 @@ public abstract class SLReadRolePropertyNode extends SLExpressionNode {
     static final int LIBRARY_LIMIT = 3;
     static final int SPECIALIZATION_LIMIT = 3;
 
+    @ExplodeLoop
     Object lookupTarget(SLObject obj, Object name, SLToMemberNode asMember, InteropLibrary roleLibrary) {
         try {
             String nameStr = asMember.execute(name);
-            for (int i = obj.roles.size() - 1; i >= 0; i--) {
-                Object role = obj.roles.get(i);
+            for (int i = obj.roles.length - 1; i >= 0; i--) {
+                Object role = obj.roles[i];
                 if (roleLibrary.isMemberExisting(role, nameStr)) {
                     return role;
                 }
@@ -95,7 +98,7 @@ public abstract class SLReadRolePropertyNode extends SLExpressionNode {
                                        @Cached("name") Object cachedName,
                                        @Cached("receiver.rolesUnchanged.getAssumption()") Assumption rolesUnchanged,
                                        @Cached SLToMemberNode asMember,
-                                       @CachedLibrary("receiver") InteropLibrary objects,
+                                       @CachedLibrary(limit = "LIBRARY_LIMIT") InteropLibrary objects,
                                        @Cached("lookupTarget(receiver, name, asMember, objects)") Object target,
                                        @CachedLibrary("target") InteropLibrary targets) {
         try {
@@ -108,10 +111,10 @@ public abstract class SLReadRolePropertyNode extends SLExpressionNode {
         }
     }
 
-    @Specialization(replaces = "readPlayingObject", limit = "LIBRARY_LIMIT")
+    @Specialization(replaces = "readPlayingObject")
     protected Object readPlayingObjectUncached(SLObject receiver, Object name,
                                                @Cached SLToMemberNode asMember,
-                                               @CachedLibrary("receiver") InteropLibrary objects,
+                                               @CachedLibrary(limit = "LIBRARY_LIMIT") InteropLibrary objects,
                                                @CachedLibrary(limit = "LIBRARY_LIMIT") InteropLibrary targets) {
         try {
             Object target = lookupTarget(receiver, name, asMember, objects);
