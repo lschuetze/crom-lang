@@ -77,6 +77,7 @@ import com.oracle.truffle.sl.nodes.expression.SLMulNodeGen;
 import com.oracle.truffle.sl.nodes.expression.SLParenExpressionNode;
 import com.oracle.truffle.sl.nodes.expression.SLReadPropertyNode;
 import com.oracle.truffle.sl.nodes.expression.SLReadPropertyNodeGen;
+import com.oracle.truffle.sl.nodes.expression.SLReadRolePropertyNodeGen;
 import com.oracle.truffle.sl.nodes.expression.SLStringLiteralNode;
 import com.oracle.truffle.sl.nodes.expression.SLSubNodeGen;
 import com.oracle.truffle.sl.nodes.expression.SLWritePropertyNode;
@@ -553,6 +554,21 @@ public class SLNodeFactory {
         }
 
         final SLExpressionNode result = SLReadPropertyNodeGen.create(receiverNode, nameNode);
+
+        final int startPos = receiverNode.getSourceCharIndex();
+        final int endPos = nameNode.getSourceEndIndex();
+        result.setSourceSection(startPos, endPos - startPos);
+        result.addExpressionTag();
+
+        return result;
+    }
+
+    public SLExpressionNode createReadRoleProperty(SLExpressionNode receiverNode, SLExpressionNode nameNode) {
+        if (receiverNode == null || nameNode == null) {
+            return null;
+        }
+
+        final SLExpressionNode result = SLReadRolePropertyNodeGen.create(receiverNode, nameNode);
 
         final int startPos = receiverNode.getSourceCharIndex();
         final int endPos = nameNode.getSourceEndIndex();

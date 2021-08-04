@@ -19,11 +19,11 @@ function main() {
   play(obj1, obj2);
 
   println(obj1.x);
-  println(newPlayer(obj1).x);
+  println(obj1!x);
   println("");
 
-  println(newPlayer(obj1).y);
-  println(newPlayer(obj1).z);
+  println(obj1!y);
+  println(obj1!z);
   println("");
 
   // Reassigning properties of roles (is this actually necessary?)

@@ -314,6 +314,13 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                 { nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
                                                   $result = factory.createReadProperty(receiver, nestedAssignmentName); }
 |
+    '!'                                         { if (receiver == null) {
+                                                       receiver = factory.createRead(assignmentName);
+                                                  } }
+    IDENTIFIER
+                                                { nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
+                                                  $result = factory.createReadRoleProperty(receiver, nestedAssignmentName); }
+|
     '['                                         { if (receiver == null) {
                                                       receiver = factory.createRead(assignmentName);
                                                   } }

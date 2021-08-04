@@ -6,10 +6,10 @@ function test1() {
   obj2 = new();
   obj2.x = 0;
 
-  println(newPlayer(obj1).x);
+  println(obj1!x);
   // This should invalidate the SLAsPlayerBuiltin.newPlayer cache for the following newPlayer(obj1)
   play(obj1, obj2);
-  println(newPlayer(obj1).x);
+  println(obj1!x);
 }
 
 function main() {
