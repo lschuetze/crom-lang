@@ -51,6 +51,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
@@ -234,6 +235,7 @@ public final class SLObject extends DynamicObject implements TruffleObject {
         objectLibrary.put(this, name, value);
     }
 
+    @TruffleBoundary
     public void playRole(SLObject role) {
         roles = Arrays.copyOf(roles, roles.length + 1);
         roles[roles.length - 1] = role;
