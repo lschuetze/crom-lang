@@ -88,8 +88,10 @@ import java.util.ListIterator;
 @ExportLibrary(InteropLibrary.class)
 public final class SLObject extends DynamicObject implements TruffleObject {
     protected static final int CACHE_LIMIT = 3;
+    protected static final Object NEXT_ROLE_KEY = new Object();
 
     public SLObject[] roles;
+    public Shape roleGraph;
     public CyclicAssumption rolesUnchanged;
 
     public SLObject(Shape shape) {
@@ -235,10 +237,18 @@ public final class SLObject extends DynamicObject implements TruffleObject {
         objectLibrary.put(this, name, value);
     }
 
+    private Shape createGraphShape(Shape roleShape, Shape nextGraphShape) {
+        return Shape.newBuilder(roleShape)
+                .addConstantProperty(NEXT_ROLE_KEY, nextGraphShape, 0)
+                .build();
+    }
+
     @TruffleBoundary
-    public void playRole(SLObject role) {
+    public void playRole(SLObject role, Shape roleShape) {
         roles = Arrays.copyOf(roles, roles.length + 1);
         roles[roles.length - 1] = role;
+
         rolesUnchanged.invalidate();
+        roleGraph = createGraphShape(roleShape, roleGraph);
     }
 }

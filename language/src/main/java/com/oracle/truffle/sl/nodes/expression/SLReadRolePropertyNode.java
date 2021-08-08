@@ -52,6 +52,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.util.SLToMemberNode;
 import com.oracle.truffle.sl.runtime.SLObject;
@@ -73,38 +74,42 @@ public abstract class SLReadRolePropertyNode extends SLExpressionNode {
     static final int LIBRARY_LIMIT = 3;
     static final int SPECIALIZATION_LIMIT = 3;
 
+    static final int UNKNOWN_IDENTIFIER_INDEX = -2;
+    static final int ORIGINAL_OBJECT_INDEX = -1;
+
     @ExplodeLoop
-    Object lookupTarget(SLObject obj, Object name, SLToMemberNode asMember, InteropLibrary roleLibrary) {
+    int lookupTargetIndex(SLObject obj, Object name, SLToMemberNode asMember, InteropLibrary roleLibrary) {
         try {
             String nameStr = asMember.execute(name);
             for (int i = obj.roles.length - 1; i >= 0; i--) {
                 Object role = obj.roles[i];
                 if (roleLibrary.isMemberExisting(role, nameStr)) {
-                    return role;
+                    return i;
                 }
             }
-            return obj;
+            return ORIGINAL_OBJECT_INDEX;
         }
         catch (UnknownIdentifierException ex) {
-            return null;
+            return UNKNOWN_IDENTIFIER_INDEX;
         }
     }
 
-    @Specialization(guards = { "receiver == cachedReceiver", "name == cachedName" },
-            assumptions = { "rolesUnchanged" },
+    @Specialization(guards = { "receiver.roleGraph == cachedRoleGraph", "name == cachedName" },
             limit = "SPECIALIZATION_LIMIT")
     protected Object readPlayingObject(SLObject receiver, Object name,
-                                       @Cached("receiver") SLObject cachedReceiver,
+                                       @Cached("receiver.roleGraph") Shape cachedRoleGraph,
                                        @Cached("name") Object cachedName,
-                                       @Cached("receiver.rolesUnchanged.getAssumption()") Assumption rolesUnchanged,
                                        @Cached SLToMemberNode asMember,
                                        @CachedLibrary(limit = "LIBRARY_LIMIT") InteropLibrary objects,
-                                       @Cached("lookupTarget(receiver, name, asMember, objects)") Object target,
-                                       @CachedLibrary("target") InteropLibrary targets) {
+                                       @Cached("lookupTargetIndex(receiver, name, asMember, objects)") int targetIndex,
+                                       @CachedLibrary(limit = "LIBRARY_LIMIT") InteropLibrary targets) {
         try {
-            if (target == null) {
+            if (targetIndex == UNKNOWN_IDENTIFIER_INDEX) {
                 throw SLUndefinedNameException.undefinedProperty(this, name);
             }
+            SLObject target = targetIndex == ORIGINAL_OBJECT_INDEX
+                    ? receiver
+                    : receiver.roles[targetIndex];
             return targets.readMember(target, asMember.execute(name));
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             throw SLUndefinedNameException.undefinedProperty(this, name);
@@ -117,10 +122,13 @@ public abstract class SLReadRolePropertyNode extends SLExpressionNode {
                                                @CachedLibrary(limit = "LIBRARY_LIMIT") InteropLibrary objects,
                                                @CachedLibrary(limit = "LIBRARY_LIMIT") InteropLibrary targets) {
         try {
-            Object target = lookupTarget(receiver, name, asMember, objects);
-            if (target == null) {
+            int targetIndex = lookupTargetIndex(receiver, name, asMember, objects);
+            if (targetIndex == UNKNOWN_IDENTIFIER_INDEX) {
                 throw SLUndefinedNameException.undefinedProperty(this, name);
             }
+            SLObject target = targetIndex == ORIGINAL_OBJECT_INDEX
+                    ? receiver
+                    : receiver.roles[targetIndex];
             return targets.readMember(target, asMember.execute(name));
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             throw SLUndefinedNameException.undefinedProperty(this, name);
