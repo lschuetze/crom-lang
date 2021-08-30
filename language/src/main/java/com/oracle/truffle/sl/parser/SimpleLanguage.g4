@@ -224,10 +224,6 @@ function
 'def'
 IDENTIFIER
 parameters_decl
-(
-    ':'
-    IDENTIFIER
-)?
 body=block[false]                               { factory.finishFunction($body.result); }
 ;
 
@@ -272,9 +268,6 @@ statement [boolean inLoop] returns [SLStatementNode result]
     ';'
 |
     roleplay_statement
-    ';'
-|
-    compartment_statement
     ';'
 )
 ;
@@ -324,17 +317,6 @@ assignment_target
     )*
     ']'
 )
-;
-
-
-compartment_statement
-:
-(
-    'activate'
-|
-    'deactivate'
-)
-IDENTIFIER
 ;
 
 
