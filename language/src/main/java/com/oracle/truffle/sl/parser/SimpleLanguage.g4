@@ -117,18 +117,18 @@ public static Map<String, RootCallTarget> parseSL(SLLanguage language, Source so
 
 simplelanguage
 :
-globaldef globaldef* EOF
+ LINEBREAK* globaldef LINEBREAK* (globaldef LINEBREAK*)* EOF
 ;
 
 
 globaldef
 :
 (
-    function
+function
 |
-    cls
+cls
 |
-    compartment
+compartment
 )
 ;
 
@@ -136,11 +136,11 @@ cls
 :
 'class'
 IDENTIFIER
-parameters_decl
+constructor_decl
 start_body
 (
     function
-|
+    |
     variable_definition
 )*
 end_body
@@ -151,16 +151,17 @@ compartment
 :
 'compartment'
 IDENTIFIER
-parameters_decl
+constructor_decl
 start_body
 (
     (
         function
-    |
+        |
         variable_definition
-    |
+        |
         role
     )
+    LINEBREAK*
 )*
 end_body
 ;
@@ -170,34 +171,34 @@ role
 :
 'role'
 IDENTIFIER
-parameters_decl
+constructor_decl
 'playedBy'
 IDENTIFIER
 start_body
 (
     (
         function
-    |
+        |
         variable_definition
     )
+    LINEBREAK*
 )*
 end_body
 ;
 
 
-parameters_decl
+constructor_decl
 :
+'('
 (
-    '('
+    identifier_decl
     (
+        ','
+        LINEBREAK?
         identifier_decl
-        (
-            ','
-            identifier_decl
-        )*
-    )?
-    ')'
+    )*
 )?
+')'
 ;
 
 
@@ -207,7 +208,6 @@ variable_definition
 identifier_decl
 '='
 expression
-';'
 ;
 
 
@@ -223,7 +223,16 @@ function
 :
 'def'
 IDENTIFIER
-parameters_decl
+s='('
+                                                { factory.startFunction($IDENTIFIER, $s); }
+(
+    IDENTIFIER                                  { factory.addFormalParameter($IDENTIFIER); }
+    (
+        ','
+        IDENTIFIER                              { factory.addFormalParameter($IDENTIFIER); }
+    )*
+)?
+')'
 body=block[false]                               { factory.finishFunction($body.result); }
 ;
 
@@ -247,29 +256,31 @@ statement [boolean inLoop] returns [SLStatementNode result]
     while_statement                             { $result = $while_statement.result; }
 |
     b='break'                                   { if (inLoop) { $result = factory.createBreak($b); } else { SemErr($b, "break used outside of loop"); } }
-    ';'
+    (';' | LINEBREAK)
 |
     c='continue'                                { if (inLoop) { $result = factory.createContinue($c); } else { SemErr($c, "continue used outside of loop"); } }
-    ';'
+    (';' | LINEBREAK)
 |
     if_statement[inLoop]                        { $result = $if_statement.result; }
 |
     return_statement                            { $result = $return_statement.result; }
 |
     expression                                  { $result = $expression.result; }
-    ';'
+    (';' | LINEBREAK)
 |
     d='debugger'                                { $result = factory.createDebugger($d); }
-    ';'
+    (';' | LINEBREAK)
 |
     variable_definition
+    (';' | LINEBREAK)
 |
     assignment_statement
-    ';'
+    (';' | LINEBREAK)
 |
     roleplay_statement
-    ';'
+    (';' | LINEBREAK)
 )
+LINEBREAK*
 ;
 
 assignment_statement
@@ -301,22 +312,8 @@ assignment_target
 roleplay_statement
 :
 assignment_target
-(
-    'play'
-|
-    'unplay'
-)
-(
-    variable_expression
-|
-    '['
-    variable_expression
-    (
-        ','
-        variable_expression
-    )*
-    ']'
-)
+'play'
+variable_expression
 ;
 
 
@@ -350,7 +347,7 @@ r='return'                                      { SLExpressionNode value = null;
 (
     expression                                  { value = $expression.result; }
 )?                                              { $result = factory.createReturn($r, value); }
-';'
+(';' | LINEBREAK)
 ;
 
 
@@ -489,12 +486,16 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
 )?
 ;
 
-start_body returns [Token result] : '{';
-end_body returns [Token result] : '}';
+start_body returns [Token result]
+: LINEBREAK? '{' LINEBREAK*;
+end_body returns [Token result]
+: LINEBREAK? '}' LINEBREAK*;
 
 // lexer
 
-WS : [ \t\r\n\u000C]+ -> skip;
+LINEBREAK : [\r\n];
+
+WS : [ \t\u000C]+ -> skip;
 COMMENT : '/*' .*? '*/' -> skip;
 LINE_COMMENT : '//' ~[\r\n]* -> skip;
 

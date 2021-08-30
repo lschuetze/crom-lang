@@ -8,7 +8,7 @@ class Robot(name : String) {}
 */
 compartment Behavior() {
 
-    var name : String = "Behavior";
+    var name : String = "Behavior"
 
     // Do we want these possible variations to be valid?
     // 1) without playedBy could lead to runtime errors
@@ -19,7 +19,7 @@ compartment Behavior() {
 
     */
     role ServiceRole() playedBy Robot {
-        var name : String = "ServiceRole";
+        var name : String = "ServiceRole"
         def move() {
             // a +this activates role dispatch on the conceptual whole
             /*
@@ -27,26 +27,24 @@ compartment Behavior() {
             will indeed return a value (i.e., is defined)?
             */
             // This should return ServiceRole.name
-            var dynamicName : String = +this.name;
+            var dynamicName : String = +this.name
             // How to reference the enclosing context (i.e., compartment)?
             // thisC, cthis, other ideas?
-            var contextName : String = thisC.name;
+            var contextName : String = thisC.name
             // reference the respective role
-            var roleName : String = this.name;
+            var roleName : String = this.name
             // this can be typechecked by playedBy
-            var robotName : String = base.name;
-            System.println("Move $robotName from $roleName in $contextName");
+            var robotName : String = base.name
+            System.println("Move $robotName from $roleName in $contextName")
         }
     }
 }
 
 def main() {
-    var myRobot : Robot = new Robot("Pete");
-    var robotBehavior : Behavior = new Behavior();
-    myRobot play robotBehavior.ServiceRole;
+    var myRobot : Robot = new Robot("Pete")
+    var robotBehavior : Behavior = new Behavior()
+    myRobot play robotBehavior.ServiceRole
 
-    myRobot.move();
-
-    myRobot unplay robotBehavior.ServiceRole;
+    myRobot.move()
 }
 
