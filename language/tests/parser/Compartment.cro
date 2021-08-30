@@ -43,11 +43,10 @@ compartment Behavior() {
 def main() {
     var myRobot : Robot = new Robot("Pete");
     var robotBehavior : Behavior = new Behavior();
-
-    activate robotBehavior;
     myRobot play robotBehavior.ServiceRole;
+
     myRobot.move();
+
     myRobot unplay robotBehavior.ServiceRole;
-    deactivate robotBehavior;
 }
 
